@@ -156,6 +156,218 @@ print(lr.predict(X_test_std[:3, :]))
 
 print(lr.predict(X_test_std[0, :].reshape(1, -1)))
 
+# Implementation of the parameter C for the Logistic Regression
+weights, params = [], []
+for c in np.arange(-5, 5):
+    lr = LogisticRegression(C=10.**c,
+                            multi_class='ovr')
+    lr.fit(X_train_std, y_train)
+    weights.append(lr.coef_[1])
+    params.append(10.**c)
+
+weights = np.array(weights)
+plt.plot(params, weights[:, 0],
+         label='Petal length')
+plt.plot(params, weights[:, 1], linestyle='--',
+         label='Petal width')
+plt.ylabel('Weight coefficient')
+plt.xlabel('C')
+plt.legend(loc='upper left')
+plt.xscale('log')
+plt.show()
+
+
+# Train the SVM model to classify the different flowers in our Iris dataset:
+from sklearn.svm import SVC
+svm = SVC(kernel='linear', C=1.0, random_state=1)
+svm.fit(X_train_std, y_train)
+dr.plot_decision_regions(X_combined_std,
+                         y_combined,
+                         classifier=svm,
+                         test_idx=range(105, 150))
+
+plt.xlabel('Petal length [standardized]')
+plt.ylabel('Petal width [standardized]')
+plt.legend(loc='upper left')
+plt.tight_layout()
+plt.show()
+
+
+# Alternative implement via the SGD version of perceptron.
+from sklearn.linear_model import SGDClassifier
+ppn = SGDClassifier(loss='perceptron')
+lr = SGDClassifier(loss='log')
+svm = SGDClassifier(loss='hinge')
+
+# Creating a simple dataset of an XOR gate using the `logical_xor` function from NumPy
+np.random.seed(1)
+X_xor = np.random.randn(200, 2)
+y_xor = np.logical_xor(X_xor[:, 0] > 0,
+                       X_xor[:, 1] > 0)
+y_xor = np.where(y_xor, 1, 0)
+plt.scatter(X_xor[y_xor == 1, 0],
+            X_xor[y_xor == 1, 1],
+            c='royalblue', marker='s',
+            label='Class 1')
+
+plt.scatter(X_xor[y_xor == 0, 0],
+            X_xor[y_xor == 0, 1],
+            c='tomato', marker='o',
+            label='Class 0')
+
+plt.xlim([-3, 3])
+plt.ylim([-3, 3])
+plt.xlabel('Feature 1')
+plt.ylabel('Feature 2')
+plt.legend(loc='best')
+plt.tight_layout()
+plt.show()
+
+# Train a kernel SVM that is able to draw a nonlinear decision boundary
+svm = SVC(kernel='rbf', random_state=1, gamma=0.10, C=10.0)
+svm.fit(X_xor, y_xor)
+dr.plot_decision_regions(X_xor, y_xor, classifier=svm)
+plt.legend(loc='upper left')
+plt.tight_layout()
+plt.show()
+
+# Applying the RBF kernel SVM to our Iris flower dataset:
+svm = SVC(kernel='rbf', random_state=1, gamma=0.2, C=1.0)
+svm.fit(X_train_std, y_train)
+dr.plot_decision_regions(X_combined_std,
+                         y_combined,
+                         classifier=svm,
+                         test_idx=range(105, 150))
+plt.xlabel('Petal length [standardized]')
+plt.ylabel('Petal width [standardized]')
+plt.legend(loc='upper left')
+plt.tight_layout()
+plt.show()
+
+# increase the value of y to change the decision boundary
+svm = SVC(kernel='rbf', random_state=1, gamma=100.0, C=1.0)
+svm.fit(X_train_std, y_train)
+
+dr.plot_decision_regions(X_combined_std,
+                         y_combined,
+                         classifier=svm,
+                         test_idx=range(105, 150))
+plt.xlabel('Petal length [standardized]')
+plt.ylabel('Petal width [standardized]')
+plt.legend(loc='upper left')
+plt.tight_layout()
+plt.show()
+
+# Visualize the entropy values for different class distribution
+def entropy(p):
+    return - p * np.log2(p) - (1 - p) * np.log2((1 - p))
+
+x = np.arange(0.0, 1.0, 0.01)
+ent = [entropy(p) if p != 0 else None for p in x]
+plt.ylabel('Entropy')
+plt.xlabel('Class-membership probability p(i=1)')
+plt.plot(x, ent)
+plt.show()
+
+# Comparison of the three different impurity criteria
+def gini(p):
+    return p*(1 - p) + (1 - p)*(1 - (1 - p))
+
+def entropy(p):
+    return - p * np.log2(p) - (1 - p)*np.log2((1 - p))
+
+def error(p):
+    return 1 - np.max([p, 1 - p])
+
+x = np.arange(0.0, 1.0, 0.01)
+
+ent = [entropy(p) if p != 0 else None for p in x]
+sc_ent = [e * 0.5 if e else None for e in ent]
+err = [error(i) for i in x]
+
+fig = plt.figure()
+ax = plt.subplot(111)
+for i, lab, ls, c, in zip([ent, sc_ent, gini(x), err],
+                          ['Entropy', 'Entropy (scaled)',
+                           'Gini impurtiy', 'Misclassification erro'],
+                          ['-', '-', '--', '-.'],
+                          ['black', 'lightgray', 'red', 'green', 'cyan']):
+    line = ax.plot(x, i, label=lab, linestyle=ls, lw=2, color=c)
+
+ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
+          ncol=5, fancybox=True, shadow=False)
+
+ax.axhline(y=0.5, linewidth=1, color='k', linestyle='--')
+ax.axhline(y=1.0, linewidth=1, color='k', linestyle='--')
+plt.ylim([0, 1.1])
+plt.xlabel('p(i=1)')
+plt.ylabel('Impurity index')
+plt.show()
+
+# Building a decision tree using scikit-learn
+from sklearn.tree import DecisionTreeClassifier
+
+tree_model = DecisionTreeClassifier(criterion='gini',
+                                    max_depth=4,
+                                    random_state=1)
+
+tree_model.fit(X_train_std, y_train)
+
+X_combined = np.vstack((X_train, X_test))
+y_combined = np.hstack((y_train, y_test))
+dr.plot_decision_regions(X_combined, y_combined,
+                         classifier=tree_model,
+                         test_idx=range(105, 150))
+
+plt.xlabel('Petal length [cm]')
+plt.ylabel('Petal width [cm]')
+plt.legend(loc='upper left')
+plt.tight_layout()
+plt.show()
+
+# Visualize the decision tree model after training
+from sklearn import tree
+
+feature_names = ['Sepal length', 'Sepal width',
+                 'Petal length', 'Petal width']
+
+tree.plot_tree(tree_model,
+               feature_names=feature_names,
+               filled=True)
+
+plt.show()
+
+# Using random forest classifier from individual decision trees
+from sklearn.ensemble import RandomForestClassifier
+forest = RandomForestClassifier(n_estimators=25,
+                                random_state=1,
+                                n_jobs=2)
+
+forest.fit(X_train, y_train)
+
+dr.plot_decision_regions(X_combined, y_combined,
+                         classifier=forest,
+                         test_idx=range(105, 150))
+plt.xlabel('Petal length [cm]')
+plt.ylabel('Petal width [cm]')
+plt.legend(loc='upper left')
+plt.tight_layout()
+plt.show()
+
+# Using KNN model in scikit-learn using Euclidean distance
+from sklearn.neighbors import KNeighborsClassifier
+knn = KNeighborsClassifier(n_neighbors=5, p=2,
+                           metric='minkowski')
+knn.fit(X_train_std, y_train)
+dr.plot_decision_regions(X_combined_std, y_combined,
+                         classifier=knn, test_idx=range(105, 150))
+plt.xlabel('Petal length [standardized]')
+plt.ylabel('Petal width [standardized]')
+plt.legend(loc='upper left')
+plt.tight_layout()
+plt.show()
+
+
 
 
 # X_train_01_subset = X_train_std[(y_train == 0) | (y_train == 1)]
